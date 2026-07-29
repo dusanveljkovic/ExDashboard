@@ -1,0 +1,156 @@
+defmodule Exdashboard.TUI do
+  use ExRatatui.App
+
+  alias ExRatatui.Layout.Rect
+  alias ExRatatui.{Layout, Event, Focus, Style}
+  alias ExRatatui.Widgets.{Block, Paragraph}
+
+  alias Exdashboard.Widgets
+
+  @impl true
+  def mount(_opts) do
+    {:ok, data_beszel} = Widgets.Beszel.Main.mount()
+    data_beszel = Widgets.Beszel.Main.refresh(data_beszel)
+    {:ok, data_adguard} = Widgets.Adguardhome.Main.mount()
+    data_adguard = Widgets.Adguardhome.Main.refresh(data_adguard)
+
+    state = %{
+      widgets_focus: Focus.new([:w1, :w2, :w3, :w4]),
+      widgets: %{
+        w1: Widgets.Factory.beszel(data_beszel, "debian-server"),
+        w2: Widgets.Factory.adguardhome(data_adguard)
+      },
+      main_widget_name: :w1
+    }
+
+    register_refreshes(state)
+    {w, h} = ExRatatui.terminal_size()
+    {:ok, register_regions(state, w, h)}
+  end
+
+  defp register_refreshes(state) do
+    Enum.each(state.widgets, fn {name, config} ->
+      Process.send_after(self(), {:refresh, name}, config.refresh_ms)
+    end)
+  end
+
+  @impl true
+  def handle_info({:refresh, name}, state) do
+    case Map.fetch(state.widgets, name) do
+      {:ok, config} ->
+        new_data = config.refresh_f.(config.data)
+        new_small = %{config.small | data: new_data}
+        new_big = %{config.big | data: new_data}
+        new_config = %{config | data: new_data, small: new_small, big: new_big}
+
+        Process.send_after(self(), {:refresh, name}, config.refresh_ms)
+        new_state = %{state | widgets: Map.put(state.widgets, name, new_config)}
+        {:noreply, new_state}
+
+      :error ->
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def render(state, frame) do
+    {w1_rect, w2_rect, w3_rect, w4_rect, main_rect} = panels(frame)
+
+    w1 = focus_wrapper(state, state.widgets.w1.small, :w1)
+    w2 = focus_wrapper(state, state.widgets.w2.small, :w2)
+    w3 = focus_wrapper(state, empty_widget("w3"), :w3)
+    w4 = focus_wrapper(state, empty_widget("w4"), :w4)
+
+    [
+      {w1, w1_rect},
+      {w2, w2_rect},
+      {w3, w3_rect},
+      {w4, w4_rect},
+      {Map.get(state.widgets, state.main_widget_name).big, main_rect}
+    ]
+  end
+
+  def focus_wrapper(state, widget, key) do
+    border =
+      if Focus.focused?(state.widgets_focus, key),
+        do: %Style{fg: :cyan},
+        else: %Style{fg: :gray}
+
+    if Map.has_key?(widget, :border_style) do
+      %{widget | border_style: border}
+    else
+      %{widget | block: %{widget.block | border_style: border}}
+    end
+  end
+
+  def empty_widget(name) do
+    %Paragraph{
+      text: name,
+      alignment: :center,
+      block: %Block{
+        title: " #{name} ",
+        borders: [:all],
+        border_type: :rounded
+      }
+    }
+  end
+
+  defp panels(%{width: w, height: h}) do
+    area = %Rect{x: 0, y: 0, width: w, height: h}
+
+    [header, body, footer] =
+      Layout.split(area, :vertical, [{:length, 3}, {:min, 0}, {:length, 3}])
+
+    [sidebar, main] =
+      Layout.split(body, :horizontal, [
+        {:percentage, 25},
+        {:percentage, 75}
+      ])
+
+    [w1, w2, w3, w4] =
+      Layout.split(sidebar, :vertical, [
+        {:percentage, 25},
+        {:percentage, 25},
+        {:percentage, 25},
+        {:percentage, 25}
+      ])
+
+    {w1, w2, w3, w4, main}
+  end
+
+  defp register_regions(state, w, h) do
+    {w1_rect, w2_rect, w3_rect, w4_rect, _main_rect} = panels(%{width: w, height: h})
+
+    focus =
+      Focus.set_regions(state.widgets_focus, %{
+        w1: w1_rect,
+        w2: w2_rect,
+        w3: w3_rect,
+        w4: w4_rect
+      })
+
+    %{state | widgets_focus: focus}
+  end
+
+  @impl true
+  def handle_event(%Event.Key{code: "q", kind: "press"}, state), do: {:stop, state}
+
+  @impl true
+  def handle_event(%Event.Key{kind: "press"} = key, state) do
+    {focus, key} = Focus.handle_key(state.widgets_focus, key)
+    state = %{state | widgets_focus: focus}
+
+    case key do
+      nil ->
+        {:noreply, state}
+
+      %Event.Key{code: "f", kind: "press"} ->
+        {:noreply, %{state | main_widget_name: Focus.current(focus)}}
+
+      key ->
+        {:noreply, state}
+    end
+  end
+
+  def handle_event(_event, state), do: {:noreply, state}
+end
