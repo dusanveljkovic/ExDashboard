@@ -9,16 +9,13 @@ defmodule Exdashboard.TUI do
 
   @impl true
   def mount(_opts) do
-    {:ok, data_beszel} = Widgets.Beszel.Main.mount()
-    data_beszel = Widgets.Beszel.Main.refresh(data_beszel)
-    {:ok, data_adguard} = Widgets.Adguardhome.Main.mount()
-    data_adguard = Widgets.Adguardhome.Main.refresh(data_adguard)
-
     state = %{
       widgets_focus: Focus.new([:w1, :w2, :w3, :w4]),
       widgets: %{
-        w1: Widgets.Factory.beszel(data_beszel, "debian-server"),
-        w2: Widgets.Factory.adguardhome(data_adguard)
+        w1: Widgets.Factory.create_widget(:beszel, [system_name: "debian-server"]),
+        w2: Widgets.Factory.create_widget(:adguardhome),
+        w3: Widgets.Factory.create_widget(:dummy),
+        w4: Widgets.Factory.create_widget(:dummy),
       },
       main_widget_name: :w1
     }
@@ -30,7 +27,9 @@ defmodule Exdashboard.TUI do
 
   defp register_refreshes(state) do
     Enum.each(state.widgets, fn {name, config} ->
-      Process.send_after(self(), {:refresh, name}, config.refresh_ms)
+      if config.refresh_ms > 0 do
+        Process.send_after(self(), {:refresh, name}, config.refresh_ms)
+      end
     end)
   end
 
@@ -58,8 +57,8 @@ defmodule Exdashboard.TUI do
 
     w1 = focus_wrapper(state, state.widgets.w1.small, :w1)
     w2 = focus_wrapper(state, state.widgets.w2.small, :w2)
-    w3 = focus_wrapper(state, empty_widget("w3"), :w3)
-    w4 = focus_wrapper(state, empty_widget("w4"), :w4)
+    w3 = focus_wrapper(state, state.widgets.w3.small, :w3)
+    w4 = focus_wrapper(state, state.widgets.w4.small, :w4)
 
     [
       {w1, w1_rect},
@@ -81,18 +80,6 @@ defmodule Exdashboard.TUI do
     else
       %{widget | block: %{widget.block | border_style: border}}
     end
-  end
-
-  def empty_widget(name) do
-    %Paragraph{
-      text: name,
-      alignment: :center,
-      block: %Block{
-        title: " #{name} ",
-        borders: [:all],
-        border_type: :rounded
-      }
-    }
   end
 
   defp panels(%{width: w, height: h}) do

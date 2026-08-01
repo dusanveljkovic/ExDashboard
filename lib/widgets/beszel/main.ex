@@ -78,20 +78,22 @@ defmodule Exdashboard.Widgets.Beszel.Main do
   end
 
   def mount() do
-    base_url = ""
-    email = ""
-    password = ""
-
-    with {:ok, client} <- connect(base_url, email, password) do
+    with  {:ok, base_url} <- System.fetch_env("BESZEL_URL"),
+          {:ok, email} <- System.fetch_env("BESZEL_EMAIL"),
+          {:ok, password} <- System.fetch_env("BESZEL_PASSWORD"),
+          {:ok, client} <- connect(base_url, email, password) do
       data = %Beszel.Main{
         client: client,
         systems: [],
         stats: %{}
       }
 
+      data = refresh(data)
+
       {:ok, data}
     else
       {:error, reason} -> {:error, reason}
+      :error -> {:error, "Parameters for BESZEL not set propertly"}
     end
   end
 
@@ -131,12 +133,12 @@ defmodule Exdashboard.Widgets.Beszel.Main do
     s = Map.get(stats, system["id"], %{})
 
     %{
-      name: system["name"],
-      cpu_ratio: ratio(s["cpu"]),
-      ram_ratio: ratio(s["mp"]),
-      mem_ratio: ratio(s["dp"]),
-      ram_label: "#{s["m"]}GB / #{s["mu"]}GB",
-      mem_label: "#{s["d"]}GB / #{s["du"]}GB"
+      name: Map.get(system, "name", ""),
+      cpu_ratio: ratio(Map.get(s, "cpu", 0)),
+      ram_ratio: ratio(Map.get(s, "mp", 0)),
+      mem_ratio: ratio(Map.get(s, "dp", 0)),
+      ram_label: "#{Map.get(s, "mu", 0)}GB / #{Map.get(s, "m", 0)}GB",
+      mem_label: "#{Map.get(s, "du", 0)}GB / #{Map.get(s, "d", 0)}GB"
     }
   end
 

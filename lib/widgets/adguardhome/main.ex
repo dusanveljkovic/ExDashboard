@@ -3,19 +3,23 @@ defmodule Exdashboard.Widgets.Adguardhome.Main do
   alias Exdashboard.Widgets.Adguardhome
 
   def mount() do
-    base_url = ""
-    username = ""
-    password = ""
-    token = "Basic " <> Base.encode64("#{username}:#{password}")
-    client = %{base_url: base_url, token: token}
+    with  {:ok, base_url} <- System.fetch_env("ADGUARD_URL"),
+          {:ok, username} <- System.fetch_env("ADGUARD_USERNAME"),
+          {:ok, password} <- System.fetch_env("ADGUARD_PASSWORD") do
+      token = "Basic " <> Base.encode64("#{username}:#{password}")
+      client = %{base_url: base_url, token: token}
 
-    data = %Adguardhome.Main{
+      data = %Adguardhome.Main{
       client: client,
       stats: %{},
-      counter: 0
-    }
+      }
 
-    {:ok, data}
+      data = refresh(data)
+
+      {:ok, data}
+    else
+      :error -> {:error, "Parameters for ADGUARD not set propertly"}
+    end
   end
 
   def stats(client) do
@@ -32,8 +36,7 @@ defmodule Exdashboard.Widgets.Adguardhome.Main do
   end
 
   def refresh(data) do
-    new_stats = stats(data.client)
-    new_counter = data.counter + 1
-    %{data | stats: new_stats, counter: new_counter}
+    {:ok, new_stats} = stats(data.client)
+    %{data | stats: new_stats}
   end
 end

@@ -2,7 +2,7 @@ defmodule Exdashboard.Widgets.Beszel.Small do
   defstruct [:data, :system_name, border_style: nil]
 
   defimpl ExRatatui.Widget do
-    alias ExRatatui.Widgets.{Paragraph, Block, Gauge}
+    alias ExRatatui.Widgets.{Block, Gauge}
     alias ExRatatui.Style
     alias ExRatatui.Layout
     alias ExRatatui.Layout.Rect
@@ -14,12 +14,11 @@ defmodule Exdashboard.Widgets.Beszel.Small do
         ) do
       metrics = Beszel.Main.metrics_for(data, name)
 
-      [title_row, cpu_rect, mem_rect, disk_rect] =
+      [cpu_rect, mem_rect, disk_rect] =
         Layout.split(
           rect,
           :vertical,
           [
-            {:percentage, 10},
             {:min, 1},
             {:min, 1},
             {:min, 1}
@@ -29,12 +28,11 @@ defmodule Exdashboard.Widgets.Beszel.Small do
 
       [
         {%Block{
-           title: " beszel ",
+           title: " beszel [#{name}]",
            borders: [:all],
            border_style: border_style,
            border_type: :rounded
          }, rect},
-        {%Paragraph{text: name, style: %Style{modifiers: [:bold]}}, title_row},
         {%Gauge{
            ratio: metrics.cpu_ratio,
            gauge_style: %Style{fg: Beszel.Main.color_for(metrics.cpu_ratio)},

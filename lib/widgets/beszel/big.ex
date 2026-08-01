@@ -61,7 +61,8 @@ defmodule Exdashboard.Widgets.Beszel.Big do
          }, rect},
         {%Paragraph{
            text: make_header(name, system_details),
-           style: %Style{modifiers: [:bold]}
+           style: %Style{modifiers: [:bold]},
+           wrap: true
          }, header},
         {%Chart{
            datasets: [
