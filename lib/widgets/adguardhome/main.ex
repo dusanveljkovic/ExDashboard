@@ -1,23 +1,17 @@
 defmodule Exdashboard.Widgets.Adguardhome.Main do
-  defstruct [:client, :stats, :counter]
+  defstruct [:client, :stats]
   alias Exdashboard.Widgets.Adguardhome
 
   def mount() do
     with  {:ok, base_url} <- System.fetch_env("ADGUARD_URL"),
           {:ok, username} <- System.fetch_env("ADGUARD_USERNAME"),
-          {:ok, password} <- System.fetch_env("ADGUARD_PASSWORD") do
-      token = "Basic " <> Base.encode64("#{username}:#{password}")
-      client = %{base_url: base_url, token: token}
-
-      data = %Adguardhome.Main{
-      client: client,
-      stats: %{},
-      }
-
-      data = refresh(data)
-
+          {:ok, password} <- System.fetch_env("ADGUARD_PASSWORD"),
+          token = "Basic " <> Base.encode64("#{username}:#{password}"),
+          client = %{base_url: base_url, token: token},
+          {:ok, data} <- refresh(%Adguardhome.Main{client: client, stats: %{}}) do
       {:ok, data}
     else
+      {:error, {:query_failed, status, body}} -> {:error, "Query failed for ADGUARD"}
       :error -> {:error, "Parameters for ADGUARD not set propertly"}
     end
   end
@@ -36,7 +30,10 @@ defmodule Exdashboard.Widgets.Adguardhome.Main do
   end
 
   def refresh(data) do
-    {:ok, new_stats} = stats(data.client)
-    %{data | stats: new_stats}
+    with {:ok, new_stats} <- stats(data.client) do
+      {:ok, %{data | stats: new_stats}}
+    else
+      {:error, {status, body}} -> {:error, {:query_failed, status, body}}
+    end
   end
 end

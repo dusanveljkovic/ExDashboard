@@ -6,8 +6,6 @@ defmodule Exdashboard.Widgets.Adguardhome.Small do
     alias ExRatatui.Style
     alias ExRatatui.Layout
     alias ExRatatui.Layout.Rect
-    alias Exdashboard.Widgets.Adguardhome
-    alias ExRatatui.Text
     alias ExRatatui.Text.{Line, Span}
 
     def render(%{data: data, border_style: border_style}, %Rect{} = rect) do

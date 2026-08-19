@@ -17,8 +17,18 @@ defmodule Exdashboard.Widgets.Factory do
     %{
       data: data,
       small: %Widgets.Adguardhome.Small{data: data},
-      big: %Widgets.Adguardhome.Small{data: data},
+      big: %Widgets.Adguardhome.Big{data: data},
       refresh_f: &Widgets.Adguardhome.Main.refresh/1,
+      refresh_ms: 10_000
+    }
+  end
+
+  def qbittorrent(data) do
+    %{
+      data: data,
+      small: %Widgets.Qbittorrent.Small{data: data},
+      big: %Widgets.Qbittorrent.Big{data: data},
+      refresh_f: &Widgets.Qbittorrent.Main.refresh/1,
       refresh_ms: 10_000
     }
   end
@@ -57,7 +67,10 @@ defmodule Exdashboard.Widgets.Factory do
         &beszel(&1, Keyword.get(options, :system_name)))
       :adguardhome -> _create_widget(
         &Widgets.Adguardhome.Main.mount/0,
-        &adguardhome/1
+        &adguardhome/1)
+      :qbittorrent -> _create_widget(
+        &Widgets.Qbittorrent.Main.mount/0,
+        &qbittorrent/1
       )
       :dummy -> error_widget("Dummy")
     end

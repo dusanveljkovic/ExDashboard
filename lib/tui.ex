@@ -14,7 +14,7 @@ defmodule Exdashboard.TUI do
       widgets: %{
         w1: Widgets.Factory.create_widget(:beszel, [system_name: "debian-server"]),
         w2: Widgets.Factory.create_widget(:adguardhome),
-        w3: Widgets.Factory.create_widget(:dummy),
+        w3: Widgets.Factory.create_widget(:qbittorrent),
         w4: Widgets.Factory.create_widget(:dummy),
       },
       main_widget_name: :w1
@@ -37,7 +37,7 @@ defmodule Exdashboard.TUI do
   def handle_info({:refresh, name}, state) do
     case Map.fetch(state.widgets, name) do
       {:ok, config} ->
-        new_data = config.refresh_f.(config.data)
+        {:ok, new_data} = config.refresh_f.(config.data)
         new_small = %{config.small | data: new_data}
         new_big = %{config.big | data: new_data}
         new_config = %{config | data: new_data, small: new_small, big: new_big}

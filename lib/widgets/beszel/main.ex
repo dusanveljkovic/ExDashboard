@@ -81,14 +81,8 @@ defmodule Exdashboard.Widgets.Beszel.Main do
     with  {:ok, base_url} <- System.fetch_env("BESZEL_URL"),
           {:ok, email} <- System.fetch_env("BESZEL_EMAIL"),
           {:ok, password} <- System.fetch_env("BESZEL_PASSWORD"),
-          {:ok, client} <- connect(base_url, email, password) do
-      data = %Beszel.Main{
-        client: client,
-        systems: [],
-        stats: %{}
-      }
-
-      data = refresh(data)
+          {:ok, client} <- connect(base_url, email, password),
+          {:ok, data} <- refresh(%Beszel.Main{client: client, systems: [], stats: %{}}) do
 
       {:ok, data}
     else
@@ -124,7 +118,7 @@ defmodule Exdashboard.Widgets.Beszel.Main do
             end
           end)
 
-        %Beszel.Main{data | systems: systems, stats: stats, history: history, details: details}
+        {:ok, %Beszel.Main{data | systems: systems, stats: stats, history: history, details: details}}
     end
   end
 
