@@ -9,7 +9,7 @@ defmodule Exdashboard.TUI do
 
   @impl true
   def mount(_opts) do
-    layout = Exdashboard.Layouts.Sixteen
+    layout = Exdashboard.Layouts.FourPlusBig
     state =
       layout.make_state()
       |> Map.put(:layout, layout)
@@ -29,19 +29,16 @@ defmodule Exdashboard.TUI do
 
   @impl true
   def handle_info({:refresh, name}, state) do
-    case Map.fetch(state.widgets, name) do
-      {:ok, config} ->
+    case Enum.find(state.widgets, fn {w_name, _w} -> w_name == name end) do
+      nil -> {:noreply, state}
+      {_w_name, config} ->
         {:ok, new_data} = config.refresh_f.(config.data)
         new_small = %{config.small | data: new_data}
         new_big = %{config.big | data: new_data}
         new_config = %{config | data: new_data, small: new_small, big: new_big}
 
         Process.send_after(self(), {:refresh, name}, config.refresh_ms)
-        new_state = %{state | widgets: Map.put(state.widgets, name, new_config)}
-        {:noreply, new_state}
-
-      :error ->
-        {:noreply, state}
+        {:noreply, %{state | widgets: List.keyreplace(state.widgets, name, 0, {name, new_config})}}
     end
   end
 
@@ -52,7 +49,7 @@ defmodule Exdashboard.TUI do
 
     [
       {make_header(layout.name()), header_rect},
-      {make_footer(), footer_rect},
+      {make_footer(layout.options()), footer_rect},
     ] ++ layout_render
   end
 
@@ -66,8 +63,8 @@ defmodule Exdashboard.TUI do
     }
   end
 
-  def make_footer() do
-    options = ["[Tab] cycle", "[f]ocus a widget", "[q]uit"]
+  def make_footer(more_options) do
+    options = ["[q]uit"] ++ more_options
     rows = options
     |> Enum.with_index()
     |> Enum.reduce(
@@ -93,16 +90,12 @@ defmodule Exdashboard.TUI do
   def handle_event(%Event.Key{code: "q", kind: "press"}, state), do: {:stop, state}
 
   @impl true
-  def handle_event(%Event.Key{kind: "press"} = key, state) do
-    {focus, key} = Focus.handle_key(state.widgets_focus, key)
-    state = %{state | widgets_focus: focus}
+  def handle_event(%Event.Key{kind: "press"} = key, %{layout: layout} = state) do
+    {state, key} = layout.handle_key(key, state)
 
     case key do
       nil ->
         {:noreply, state}
-
-      %Event.Key{code: "f", kind: "press"} ->
-        {:noreply, %{state | main_widget_name: Focus.current(focus)}}
 
       key ->
         {:noreply, state}

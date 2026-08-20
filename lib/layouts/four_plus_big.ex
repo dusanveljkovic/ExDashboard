@@ -5,12 +5,12 @@ defmodule Exdashboard.Layouts.FourPlusBig do
   def make_state() do
     %{
       widgets_focus: Focus.new([:w1, :w2, :w3, :w4]),
-      widgets: %{
-        w1: Widgets.Factory.create_widget(Widgets.Beszel.Main, [system_name: "debian-server"]),
-        w2: Widgets.Factory.create_widget(Widgets.Adguardhome.Main),
-        w3: Widgets.Factory.create_widget(Widgets.Qbittorrent.Main),
-        w4: Widgets.Factory.create_widget(:dummy),
-      },
+      widgets: [
+        { :w1, Widgets.Factory.create_widget(Widgets.Beszel.Main, [system_name: "debian-server"])},
+        { :w2, Widgets.Factory.create_widget(Widgets.Adguardhome.Main)},
+        { :w3, Widgets.Factory.create_widget(Widgets.Qbittorrent.Main)},
+        { :w4, Widgets.Factory.create_widget(:dummy)},
+      ],
       main_widget_name: :w1,
     }
   end
@@ -22,18 +22,13 @@ defmodule Exdashboard.Layouts.FourPlusBig do
   def render(state, frame) do
     {w1_rect, w2_rect, w3_rect, w4_rect, main_rect} = panels(frame)
 
-    w1 = focus_wrapper(state, state.widgets.w1.small, :w1)
-    w2 = focus_wrapper(state, state.widgets.w2.small, :w2)
-    w3 = focus_wrapper(state, state.widgets.w3.small, :w3)
-    w4 = focus_wrapper(state, state.widgets.w4.small, :w4)
+    ws = Enum.zip(state.widgets, [w1_rect, w2_rect, w3_rect, w4_rect])
+    |> Enum.map(fn {{widget_name, widget}, rect} ->
+      {focus_wrapper(state, widget.small, widget_name), rect}
+    end)
 
-    [
-      {w1, w1_rect},
-      {w2, w2_rect},
-      {w3, w3_rect},
-      {w4, w4_rect},
-      {Map.get(state.widgets, state.main_widget_name).big, main_rect}
-    ]
+    main_widget = List.keyfind(state.widgets, state.main_widget_name, 0) |> elem(1)
+    ws ++ [{main_widget.big, main_rect}]
   end
 
   def panels(rect) do
@@ -65,5 +60,23 @@ defmodule Exdashboard.Layouts.FourPlusBig do
     else
       %{widget | block: %{widget.block | border_style: border}}
     end
+  end
+
+  def options do
+    ["[Tab] cycle widgets", "[f]ocus a widget"]
+  end
+
+  def handle_key(key, state) do
+    {focus, key} = Focus.handle_key(state.widgets_focus, key)
+    state = %{state | widgets_focus: focus}
+
+    state =
+      case key do
+        %Event.Key{code: "f", kind: "press"} ->
+          %{state | main_widget_name: Focus.current(focus)}
+        key -> state
+      end
+
+    {state, key}
   end
 end

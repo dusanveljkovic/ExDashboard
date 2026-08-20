@@ -6,24 +6,24 @@ defmodule Exdashboard.Layouts.Sixteen do
     %{
       widgets_focus: Focus.new(
         [:w1, :w2, :w3, :w4, :w5, :w6, :w7, :w8, :w9, :w10, :w11, :w12, :w13, :w14, :w15, :w16]),
-      widgets: %{
-        w1: Widgets.Factory.create_widget(Widgets.Beszel.Main, [system_name: "debian-server"]),
-        w2: Widgets.Factory.create_widget(Widgets.Adguardhome.Main),
-        w3: Widgets.Factory.create_widget(Widgets.Qbittorrent.Main),
-        w4: Widgets.Factory.create_widget(:dummy),
-        w5: Widgets.Factory.create_widget(:dummy),
-        w6: Widgets.Factory.create_widget(:dummy),
-        w7: Widgets.Factory.create_widget(:dummy),
-        w8: Widgets.Factory.create_widget(:dummy),
-        w9: Widgets.Factory.create_widget(:dummy),
-        w10: Widgets.Factory.create_widget(:dummy),
-        w11: Widgets.Factory.create_widget(:dummy),
-        w12: Widgets.Factory.create_widget(:dummy),
-        w13: Widgets.Factory.create_widget(:dummy),
-        w14: Widgets.Factory.create_widget(:dummy),
-        w15: Widgets.Factory.create_widget(:dummy),
-        w16: Widgets.Factory.create_widget(:dummy),
-      },
+      widgets: [
+        { :w1, Widgets.Factory.create_widget(Widgets.Beszel.Main, [system_name: "debian-server"])},
+        { :w2, Widgets.Factory.create_widget(Widgets.Adguardhome.Main)},
+        { :w3, Widgets.Factory.create_widget(Widgets.Qbittorrent.Main)},
+        { :w4, Widgets.Factory.create_widget(:dummy)},
+        { :w5, Widgets.Factory.create_widget(:dummy)},
+        { :w6, Widgets.Factory.create_widget(:dummy)},
+        { :w7, Widgets.Factory.create_widget(:dummy)},
+        { :w8, Widgets.Factory.create_widget(:dummy)},
+        { :w9, Widgets.Factory.create_widget(:dummy)},
+        { :w10, Widgets.Factory.create_widget(:dummy)},
+        { :w11, Widgets.Factory.create_widget(:dummy)},
+        { :w12, Widgets.Factory.create_widget(:dummy)},
+        { :w13, Widgets.Factory.create_widget(:dummy)},
+        { :w14, Widgets.Factory.create_widget(:dummy)},
+        { :w15, Widgets.Factory.create_widget(:dummy)},
+        { :w16, Widgets.Factory.create_widget(:dummy)}
+      ],
       main_widget_name: :w1,
     }
   end
@@ -69,5 +69,21 @@ defmodule Exdashboard.Layouts.Sixteen do
     else
       %{widget | block: %{widget.block | border_style: border}}
     end
+  end
+
+  def options do
+    ["[Tab] cycle widgets"]
+  end
+
+  def handle_key(key, state) do
+    {focus, key} = Focus.handle_key(state.widgets_focus, key)
+    state = %{state | widgets_focus: focus}
+
+    #case key do
+    #  %Event.Key{code: "f", kind: "press"} ->
+    #    {:noreply, %{state | main_widget_name: Focus.current(focus)}}
+    #end
+
+    {state, key}
   end
 end
