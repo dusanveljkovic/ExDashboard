@@ -3,89 +3,69 @@ defmodule Exdashboard.Widgets.Qbittorrent.Big do
 
   defimpl ExRatatui.Widget do
     alias ExRatatui.Widgets.{Block, Table}
+    alias ExRatatui.Text.Span
     alias ExRatatui.Style
-    alias ExRatatui.Layout
     alias ExRatatui.Layout.Rect
+    alias Exdashboard.Widgets.Utils
 
     def render(
-          %{data: data},
+          %{data: %{torrents: torrents}},
           %Rect{} = rect
         ) do
 
-      stats = data.stats
-
-      [left, right] =
-        Layout.split(rect, :horizontal, [{:percentage, 50}, {:percentage, 50}], margin: 1)
-
-      [top_left, bottom_left] =
-        Layout.split(left, :vertical, [{:percentage, 50}, {:percentage, 50}])
-
-      [top_right, bottom_right] =
-        Layout.split(right, :vertical, [{:percentage, 50}, {:percentage, 50}])
-
-      general_stats = make_general_stats(stats)
-      top_client_rows = to_table_rows(stats["top_clients"])
-      top_queried_domains = to_table_rows(stats["top_queried_domains"])
-      top_blocked_domains = to_table_rows(stats["top_blocked_domains"])
+      torrent_rows = make_torrent_rows(torrents)
 
       [
-        {%Block{
-           title: " adguardhome - Big ",
-           borders: [:all],
-           border_type: :rounded
-         }, rect},
          {%Table{
-          rows: general_stats,
+          header: ["", "Name", "Size", "Progress", "Status", "Seeds", "Peers", "Down speed", "Up speed", "Ratio"],
+          header_style: %Style{modifiers: [:bold]},
+          widths: [{:max, 1}, {:min, 10}, {:max, 10}, {:max, 5}, {:max, 10}, {:max, 5}, {:max, 5}, {:max, 10}, {:max, 10}, {:max, 5}],
+          rows: torrent_rows,
           block: %Block{
-            title: " General statistics ",
+            title: " qbittorrent - Big ",
             borders: [:all],
-            border_type: :rounded
-          }
-         }, top_left},
-         {%Table{
-          rows: top_client_rows,
-          header: ["Client", "Request count"],
-          block: %Block{
-            title: " Top clients ",
-            borders: [:all],
-            border_type: :rounded
-          }
-         }, top_right},
-         {%Table{
-          rows: top_queried_domains,
-          header: ["Domain", "Request count"],
-          block: %Block{
-            title: " Top queried domains ",
-            borders: [:all],
-            border_type: :rounded
-          }
-         }, bottom_left},
-         {%Table{
-          rows: top_blocked_domains,
-          header: ["Domain", "Request count"],
-          block: %Block{
-            title: " Top blocked domains ",
-            borders: [:all],
-            border_type: :rounded
-          }
-         }, bottom_right}
-
+            border_type: :rounded,
+            padding: {1, 1, 1, 1}
+          }}, rect}
       ]
     end
 
-    defp make_general_stats(stats) do
-      [
-        ["DNS Queries", Integer.to_string(stats["num_dns_queries"])],
-        ["Blocked by filteres", Integer.to_string(stats["num_blocked_filtering"])],
-        ["Blocked malware/phishing", Integer.to_string(stats["num_replaced_safebrowsing"])],
-        ["Average processing time", "#{Kernel.round(stats["avg_processing_time"] * 1000)}ms"]
-      ]
-    end
-    defp to_table_rows(data) do
-      Enum.map(data, fn map ->
-          {key, val} = hd(Map.to_list(map))
-          [key, (if is_integer(val), do: Integer.to_string(val), else: val)]
-        end)
+    def make_torrent_rows(torrents) do
+      Enum.map(torrents,
+      fn %{"name" => name,
+      "size" => size_b,
+      "progress" => progress,
+      "state" => status,
+      "num_seeds" => seeds,
+      "num_leechs" => peers,
+      "dlspeed" => down_speed,
+      "upspeed" => up_speed,
+      "ratio" => ratio
+      } ->
+        icon = case status do
+          "stalledUP" -> %Span{content: "⬆", style: %Style{fg: :cyan}}
+          "uploading" -> %Span{content: "⬆", style: %Style{fg: :cyan}}
+          "downloading" -> %Span{content: "⬇", style: %Style{fg: :green}}
+          "stalledDL" -> %Span{content: "⬇", style: %Style{fg: :green}}
+          :else -> %Span{content: "?", style: %Style{fg: :yellow}}
+        end
+        size_str = Utils.stringify_bytes(size_b)
+        progress = Float.to_string(Float.round(progress * 100.0, 2))
+        dl_speed_str = Utils.stringify_bytes(down_speed)
+        up_speed_str = Utils.stringify_bytes(up_speed)
+        ratio = Float.to_string(Float.round(ratio * 1.0, 2))
+
+        [icon,
+          name,
+          size_str,
+          progress,
+          status,
+          Integer.to_string(seeds),
+          Integer.to_string(peers),
+          dl_speed_str,
+          up_speed_str,
+          ratio]
+      end)
     end
   end
 end
