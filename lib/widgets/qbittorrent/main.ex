@@ -66,4 +66,14 @@ defmodule Exdashboard.Widgets.Qbittorrent.Main do
      end
 
   end
+
+  def build(data, _options \\ []) do
+    %{
+      data: data,
+      small: %Qbittorrent.Small{data: data},
+      big: %Qbittorrent.Big{data: data},
+      refresh_f: &refresh/1,
+      refresh_ms: 10_000
+    }
+  end
 end

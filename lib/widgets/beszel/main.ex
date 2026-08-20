@@ -148,4 +148,14 @@ defmodule Exdashboard.Widgets.Beszel.Main do
       true -> :green
     end
   end
+
+  def build(data, options \\ []) do
+    %{
+      data: data,
+      small: %Beszel.Small{data: data, system_name: options[:system_name]},
+      big: %Beszel.Big{data: data, system_name: options[:system_name]},
+      refresh_f: &refresh/1,
+      refresh_ms: 60_000
+    }
+  end
 end

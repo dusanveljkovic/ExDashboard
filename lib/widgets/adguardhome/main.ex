@@ -11,7 +11,7 @@ defmodule Exdashboard.Widgets.Adguardhome.Main do
           {:ok, data} <- refresh(%Adguardhome.Main{client: client, stats: %{}}) do
       {:ok, data}
     else
-      {:error, {:query_failed, status, body}} -> {:error, "Query failed for ADGUARD"}
+      {:error, {:query_failed, _status, _body}} -> {:error, "Query failed for ADGUARD"}
       :error -> {:error, "Parameters for ADGUARD not set propertly"}
     end
   end
@@ -35,5 +35,15 @@ defmodule Exdashboard.Widgets.Adguardhome.Main do
     else
       {:error, {status, body}} -> {:error, {:query_failed, status, body}}
     end
+  end
+
+  def build(data, _options \\ []) do
+    %{
+      data: data,
+      small: %Adguardhome.Small{data: data},
+      big: %Adguardhome.Big{data: data},
+      refresh_f: &refresh/1,
+      refresh_ms: 10_000
+    }
   end
 end

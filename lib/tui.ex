@@ -1,4 +1,5 @@
 defmodule Exdashboard.TUI do
+  @version "beta"
   use ExRatatui.App
 
   alias ExRatatui.Layout.Rect
@@ -6,25 +7,15 @@ defmodule Exdashboard.TUI do
   alias ExRatatui.Widgets.{Block, Paragraph, Table}
   alias ExRatatui.Text.{Line, Span}
 
-  alias Exdashboard.Widgets
-
   @impl true
   def mount(_opts) do
-    state = %{
-      widgets_focus: Focus.new([:w1, :w2, :w3, :w4]),
-      widgets: %{
-        w1: Widgets.Factory.create_widget(:beszel, [system_name: "debian-server"]),
-        w2: Widgets.Factory.create_widget(:adguardhome),
-        w3: Widgets.Factory.create_widget(:qbittorrent),
-        w4: Widgets.Factory.create_widget(:dummy),
-      },
-      main_widget_name: :w1,
-      current_view: :four_small
-    }
+    layout = Exdashboard.Layouts.Sixteen
+    state =
+      layout.make_state()
+      |> Map.put(:layout, layout)
+      |> register_refreshes()
 
-    register_refreshes(state)
-    {w, h} = ExRatatui.terminal_size()
-    {:ok, register_regions(state, w, h)}
+    {:ok, state}
   end
 
   defp register_refreshes(state) do
@@ -33,6 +24,7 @@ defmodule Exdashboard.TUI do
         Process.send_after(self(), {:refresh, name}, config.refresh_ms)
       end
     end)
+    state
   end
 
   @impl true
@@ -54,41 +46,28 @@ defmodule Exdashboard.TUI do
   end
 
   @impl true
-  def render(state, frame) do
-    {header_rect, footer_rect, w1_rect, w2_rect, w3_rect, w4_rect, main_rect} = panels(frame)
-
-    w1 = focus_wrapper(state, state.widgets.w1.small, :w1)
-    w2 = focus_wrapper(state, state.widgets.w2.small, :w2)
-    w3 = focus_wrapper(state, state.widgets.w3.small, :w3)
-    w4 = focus_wrapper(state, state.widgets.w4.small, :w4)
+  def render(%{layout: layout} = state, frame) do
+    {header_rect, body_rect, footer_rect} = panels(frame)
+    layout_render = layout.render(state, body_rect)
 
     [
-      {make_header(state.current_view), header_rect},
+      {make_header(layout.name()), header_rect},
       {make_footer(), footer_rect},
-      {w1, w1_rect},
-      {w2, w2_rect},
-      {w3, w3_rect},
-      {w4, w4_rect},
-      {Map.get(state.widgets, state.main_widget_name).big, main_rect}
-    ]
+    ] ++ layout_render
   end
 
-  def make_header(current_view) do
-    view_str = case current_view do
-      :four_small -> "4 small + 1 big"
-      :sixteen_small -> "16 small"
-    end
+  def make_header(layout_name) do
     %Paragraph{
       text: [
-        %Line{spans: []},
         %Line{spans: [%Span{content: "ExDashboard - monitor everything"}], alignment: :center},
-        %Line{spans: [%Span{content: "Layout: #{view_str}"}], alignment: :center},
+        %Line{spans: [%Span{content: "Version #{@version}"}], alignment: :center},
+        %Line{spans: [%Span{content: "Layout: #{layout_name}"}], alignment: :center},
       ]
     }
   end
 
   def make_footer() do
-    options = ["[Tab] cycle", "[f]ocus a widget"]
+    options = ["[Tab] cycle", "[f]ocus a widget", "[q]uit"]
     rows = options
     |> Enum.with_index()
     |> Enum.reduce(
@@ -98,59 +77,16 @@ defmodule Exdashboard.TUI do
           List.update_at(rows, row, &(&1 ++ [Span.new(string)]))
         end)
 
-    %Table{
-      rows: rows
-    }
-  end
-
-  def focus_wrapper(state, widget, key) do
-    border =
-      if Focus.focused?(state.widgets_focus, key),
-        do: %Style{fg: :cyan},
-        else: %Style{fg: :gray}
-
-    if Map.has_key?(widget, :border_style) do
-      %{widget | border_style: border}
-    else
-      %{widget | block: %{widget.block | border_style: border}}
-    end
+    %Table{rows: rows}
   end
 
   defp panels(%{width: w, height: h}) do
     area = %Rect{x: 0, y: 0, width: w, height: h}
 
     [header, body, footer] =
-      Layout.split(area, :vertical, [{:length, 3}, {:min, 0}, {:length, 3}])
+      Layout.split(area, :vertical, [{:length, 3}, {:fill, 1}, {:length, 3}])
 
-    [sidebar, main] =
-      Layout.split(body, :horizontal, [
-        {:percentage, 25},
-        {:percentage, 75}
-      ])
-
-    [w1, w2, w3, w4] =
-      Layout.split(sidebar, :vertical, [
-        {:percentage, 25},
-        {:percentage, 25},
-        {:percentage, 25},
-        {:percentage, 25}
-      ])
-
-    {header, footer, w1, w2, w3, w4, main}
-  end
-
-  defp register_regions(state, w, h) do
-    {_header, _footer, w1_rect, w2_rect, w3_rect, w4_rect, _main_rect} = panels(%{width: w, height: h})
-
-    focus =
-      Focus.set_regions(state.widgets_focus, %{
-        w1: w1_rect,
-        w2: w2_rect,
-        w3: w3_rect,
-        w4: w4_rect
-      })
-
-    %{state | widgets_focus: focus}
+    {header, body, footer}
   end
 
   @impl true
