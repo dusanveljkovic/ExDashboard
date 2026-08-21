@@ -33,10 +33,10 @@ defmodule Exdashboard.Widgets.Qbittorrent.Small do
         up_max_speed = if up_rate_limit == 0, do: default_rate_limit / 2, else: up_rate_limit
         dl_speed_ratio = transfer_info["dl_info_speed"] / dl_max_speed
         up_speed_ratio = transfer_info["up_info_speed"] / up_max_speed
-        {dl_num, dl_label} = Exdashboard.Widgets.Utils.humanize_bytes(transfer_info["dl_info_speed"])
-        {up_num, up_label} = Exdashboard.Widgets.Utils.humanize_bytes(transfer_info["up_info_speed"])
-        {total_dl_num, total_dl_label} = Exdashboard.Widgets.Utils.humanize_bytes(transfer_info["dl_info_data"])
-        {total_up_num, total_up_label} = Exdashboard.Widgets.Utils.humanize_bytes(transfer_info["up_info_data"])
+        dl_label = Exdashboard.Widgets.Utils.stringify_bytes(transfer_info["dl_info_speed"])
+        up_label = Exdashboard.Widgets.Utils.stringify_bytes(transfer_info["up_info_speed"])
+        total_dl_label = Exdashboard.Widgets.Utils.stringify_bytes(transfer_info["dl_info_data"])
+        total_up_label = Exdashboard.Widgets.Utils.stringify_bytes(transfer_info["up_info_data"])
         dl_style = %Style{fg: :green}
         up_style = %Style{fg: :cyan}
 
@@ -56,15 +56,15 @@ defmodule Exdashboard.Widgets.Qbittorrent.Small do
          }, rect},
         {%Gauge{
            ratio: dl_speed_ratio,
-           label: "#{dl_num} #{dl_label}",
+           label: dl_label,
            gauge_style: dl_style,
-           block: %Block{title: "download (#{total_dl_num} #{total_dl_label})"}
+           block: %Block{title: "download (#{total_dl_label})"}
          }, download_speed_rect},
         {%Gauge{
            ratio: up_speed_ratio,
-           label: "#{up_num} #{up_label}",
+           label: up_label,
            gauge_style: up_style,
-           block: %Block{title: "upload (#{total_up_num} #{total_up_label})"}
+           block: %Block{title: "upload (#{total_up_label})"}
         }, upload_speed_rect},
         {%Paragraph{
           text: [

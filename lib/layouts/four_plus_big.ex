@@ -6,10 +6,10 @@ defmodule Exdashboard.Layouts.FourPlusBig do
     %{
       widgets_focus: Focus.new([:w1, :w2, :w3, :w4]),
       widgets: [
-        { :w1, :beszel},
-        { :w2, :adguardhome},
-        { :w3, :qbittorrent},
-        { :w4, :dummy},
+        {:w1, :beszel},
+        {:w2, :adguardhome},
+        {:w3, :qbittorrent},
+        {:w4, :slskd},
       ],
       main_widget_name: :beszel,
     }
@@ -71,14 +71,11 @@ defmodule Exdashboard.Layouts.FourPlusBig do
     {focus, key} = Focus.handle_key(state.widgets_focus, key)
     state = %{state | widgets_focus: focus}
 
-    state =
-      case key do
-        %Event.Key{code: "f", kind: "press"} ->
-          {_, main_widget_name} = List.keyfind(state.widgets, Focus.current(focus), 0)
-          %{state | main_widget_name: main_widget_name}
-        key -> state
-      end
-
-    {state, key}
+    case key do
+      %Event.Key{code: "f", kind: "press"} ->
+        {_, main_widget_name} = List.keyfind(state.widgets, Focus.current(focus), 0)
+        {%{state | main_widget_name: main_widget_name}, nil}
+      key -> {state, key}
+    end
   end
 end

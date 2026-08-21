@@ -8,7 +8,7 @@ defmodule Exdashboard.TUI do
   alias ExRatatui.Text.{Line, Span}
 
   @default_layout Exdashboard.Layouts.FourPlusBig
-  def change_layout(layout) do
+  def set_layout(layout) do
     layout.make_state()
     |> Map.put(:layout, layout)
     |> Map.put(:updated, nil)
@@ -17,7 +17,7 @@ defmodule Exdashboard.TUI do
   def mount(_opts) do
     Exdashboard.Widgets.Factory.populate_store()
     GenServer.call(Exdashboard.Widgets.Store, :register_refreshes)
-    state = change_layout(@default_layout)
+    state = set_layout(@default_layout)
 
     {:ok, state}
   end
@@ -49,7 +49,7 @@ defmodule Exdashboard.TUI do
   end
 
   def make_footer(more_options) do
-    options = ["[q]uit"] ++ more_options
+    options = ["[q]uit", "[l]ayout change"] ++ more_options
     rows = options
     |> Enum.with_index()
     |> Enum.reduce(
@@ -75,15 +75,6 @@ defmodule Exdashboard.TUI do
   def handle_event(%Event.Key{code: "q", kind: "press"}, state), do: {:stop, state}
 
   @impl true
-  def handle_event(%Event.Key{code: "l", kind: "press"}, state) do
-    new_layout = case state.layout do
-      Exdashboard.Layouts.FourPlusBig -> Exdashboard.Layouts.Sixteen
-      Exdashboard.Layouts.Sixteen -> Exdashboard.Layouts.FourPlusBig
-    end
-    {:noreply, change_layout(new_layout)}
-  end
-
-  @impl true
   def handle_event(%Event.Key{kind: "press"} = key, %{layout: layout} = state) do
     {state, key} = layout.handle_key(key, state)
 
@@ -91,8 +82,15 @@ defmodule Exdashboard.TUI do
       nil ->
         {:noreply, state}
 
-      key ->
-        {:noreply, state}
+      %Event.Key{code: "l"} ->
+        new_layout = case state.layout do
+          Exdashboard.Layouts.FourPlusBig -> Exdashboard.Layouts.Sixteen
+          Exdashboard.Layouts.Sixteen -> Exdashboard.Layouts.FourPlusBig
+        end
+        {:noreply, set_layout(new_layout)}
+
+      _key ->
+        {:noreply ,state}
     end
   end
 

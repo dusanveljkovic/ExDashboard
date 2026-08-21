@@ -21,13 +21,15 @@ defmodule Exdashboard.Widgets.Store do
 
   def update(id, fun) do
     case get(id) do
+      :not_found ->
+        :not_found
+
        widget ->
         new_widget = fun.(widget)
         put(id, new_widget)
         {:ok, new_widget}
 
-      :not_found ->
-        :not_found
+
     end
   end
 
@@ -75,7 +77,7 @@ defmodule Exdashboard.Widgets.Store do
   end
 
   @impl true
-  def handle_call(:register_refreshes, {pid, _ref}, state) do
+  def handle_call(:register_refreshes, {pid, _ref}, _state) do
     register_refreshes()
     {:reply, :ok, %{callback_process: pid}}
   end

@@ -38,6 +38,7 @@ defmodule Exdashboard.Widgets.Factory do
     Widgets.Store.put(:beszel, create_widget(Widgets.Beszel.Main, [system_name: "debian-server"]))
     Widgets.Store.put(:adguardhome, create_widget(Widgets.Adguardhome.Main))
     Widgets.Store.put(:qbittorrent, create_widget(Widgets.Qbittorrent.Main))
+    Widgets.Store.put(:slskd, create_widget(Widgets.Slskd.Main))
     Widgets.Store.put(:dummy, create_widget(:dummy))
   end
 end
