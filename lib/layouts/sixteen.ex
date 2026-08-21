@@ -7,22 +7,22 @@ defmodule Exdashboard.Layouts.Sixteen do
       widgets_focus: Focus.new(
         [:w1, :w2, :w3, :w4, :w5, :w6, :w7, :w8, :w9, :w10, :w11, :w12, :w13, :w14, :w15, :w16]),
       widgets: [
-        { :w1, Widgets.Factory.create_widget(Widgets.Beszel.Main, [system_name: "debian-server"])},
-        { :w2, Widgets.Factory.create_widget(Widgets.Adguardhome.Main)},
-        { :w3, Widgets.Factory.create_widget(Widgets.Qbittorrent.Main)},
-        { :w4, Widgets.Factory.create_widget(:dummy)},
-        { :w5, Widgets.Factory.create_widget(:dummy)},
-        { :w6, Widgets.Factory.create_widget(:dummy)},
-        { :w7, Widgets.Factory.create_widget(:dummy)},
-        { :w8, Widgets.Factory.create_widget(:dummy)},
-        { :w9, Widgets.Factory.create_widget(:dummy)},
-        { :w10, Widgets.Factory.create_widget(:dummy)},
-        { :w11, Widgets.Factory.create_widget(:dummy)},
-        { :w12, Widgets.Factory.create_widget(:dummy)},
-        { :w13, Widgets.Factory.create_widget(:dummy)},
-        { :w14, Widgets.Factory.create_widget(:dummy)},
-        { :w15, Widgets.Factory.create_widget(:dummy)},
-        { :w16, Widgets.Factory.create_widget(:dummy)}
+        { :w1, :beszel},
+        { :w2, :adguardhome},
+        { :w3, :qbittorrent},
+        { :w4, :dummy},
+        { :w5, :dummy},
+        { :w6, :dummy},
+        { :w7, :dummy},
+        { :w8, :dummy},
+        { :w9, :dummy},
+        { :w10, :dummy},
+        { :w11, :dummy},
+        { :w12, :dummy},
+        { :w13, :dummy},
+        { :w14, :dummy},
+        { :w15, :dummy},
+        { :w16, :dummy}
       ],
       main_widget_name: :w1,
     }
@@ -35,8 +35,9 @@ defmodule Exdashboard.Layouts.Sixteen do
   def render(state, frame) do
     w_rects = panels(frame)
     Enum.zip(state.widgets, w_rects)
-    |> Enum.map(fn {{widget_name, widget}, rect} ->
-      {focus_wrapper(state, widget.small, widget_name), rect}
+    |> Enum.map(fn {{widget_pos, widget_name}, rect} ->
+      widget = Exdashboard.Widgets.Store.get(widget_name)
+      {focus_wrapper(state, widget.small, widget_pos), rect}
     end)
   end
 

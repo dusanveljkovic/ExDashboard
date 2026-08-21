@@ -7,39 +7,24 @@ defmodule Exdashboard.TUI do
   alias ExRatatui.Widgets.{Block, Paragraph, Table}
   alias ExRatatui.Text.{Line, Span}
 
+  @default_layout Exdashboard.Layouts.FourPlusBig
+  def change_layout(layout) do
+    layout.make_state()
+    |> Map.put(:layout, layout)
+    |> Map.put(:updated, nil)
+  end
   @impl true
   def mount(_opts) do
-    layout = Exdashboard.Layouts.FourPlusBig
-    state =
-      layout.make_state()
-      |> Map.put(:layout, layout)
-      |> register_refreshes()
+    Exdashboard.Widgets.Factory.populate_store()
+    GenServer.call(Exdashboard.Widgets.Store, :register_refreshes)
+    state = change_layout(@default_layout)
 
     {:ok, state}
   end
 
-  defp register_refreshes(state) do
-    Enum.each(state.widgets, fn {name, config} ->
-      if config.refresh_ms > 0 do
-        Process.send_after(self(), {:refresh, name}, config.refresh_ms)
-      end
-    end)
-    state
-  end
-
   @impl true
-  def handle_info({:refresh, name}, state) do
-    case Enum.find(state.widgets, fn {w_name, _w} -> w_name == name end) do
-      nil -> {:noreply, state}
-      {_w_name, config} ->
-        {:ok, new_data} = config.refresh_f.(config.data)
-        new_small = %{config.small | data: new_data}
-        new_big = %{config.big | data: new_data}
-        new_config = %{config | data: new_data, small: new_small, big: new_big}
-
-        Process.send_after(self(), {:refresh, name}, config.refresh_ms)
-        {:noreply, %{state | widgets: List.keyreplace(state.widgets, name, 0, {name, new_config})}}
-    end
+  def handle_info({:refresh, id}, state) do
+    {:noreply, %{state | updated: id}}
   end
 
   @impl true
@@ -88,6 +73,15 @@ defmodule Exdashboard.TUI do
 
   @impl true
   def handle_event(%Event.Key{code: "q", kind: "press"}, state), do: {:stop, state}
+
+  @impl true
+  def handle_event(%Event.Key{code: "l", kind: "press"}, state) do
+    new_layout = case state.layout do
+      Exdashboard.Layouts.FourPlusBig -> Exdashboard.Layouts.Sixteen
+      Exdashboard.Layouts.Sixteen -> Exdashboard.Layouts.FourPlusBig
+    end
+    {:noreply, change_layout(new_layout)}
+  end
 
   @impl true
   def handle_event(%Event.Key{kind: "press"} = key, %{layout: layout} = state) do

@@ -1,6 +1,7 @@
 defmodule Exdashboard.Widgets.Factory do
   alias ExRatatui.Widgets.{Paragraph, Block}
   alias ExRatatui.Style
+  alias Exdashboard.Widgets
 
   def error_widget(reason) do
     %{
@@ -31,5 +32,12 @@ defmodule Exdashboard.Widgets.Factory do
       {:error, reason} ->
         error_widget(reason)
     end
+  end
+
+  def populate_store() do
+    Widgets.Store.put(:beszel, create_widget(Widgets.Beszel.Main, [system_name: "debian-server"]))
+    Widgets.Store.put(:adguardhome, create_widget(Widgets.Adguardhome.Main))
+    Widgets.Store.put(:qbittorrent, create_widget(Widgets.Qbittorrent.Main))
+    Widgets.Store.put(:dummy, create_widget(:dummy))
   end
 end

@@ -3,6 +3,7 @@ defmodule Exdashboard.Application do
 
   def start(_type, _args) do
     children = [
+      {Exdashboard.Widgets.Store, []},
       {Exdashboard.TUI, []}
     ]
 

@@ -6,12 +6,12 @@ defmodule Exdashboard.Layouts.FourPlusBig do
     %{
       widgets_focus: Focus.new([:w1, :w2, :w3, :w4]),
       widgets: [
-        { :w1, Widgets.Factory.create_widget(Widgets.Beszel.Main, [system_name: "debian-server"])},
-        { :w2, Widgets.Factory.create_widget(Widgets.Adguardhome.Main)},
-        { :w3, Widgets.Factory.create_widget(Widgets.Qbittorrent.Main)},
-        { :w4, Widgets.Factory.create_widget(:dummy)},
+        { :w1, :beszel},
+        { :w2, :adguardhome},
+        { :w3, :qbittorrent},
+        { :w4, :dummy},
       ],
-      main_widget_name: :w1,
+      main_widget_name: :beszel,
     }
   end
 
@@ -23,11 +23,12 @@ defmodule Exdashboard.Layouts.FourPlusBig do
     {w1_rect, w2_rect, w3_rect, w4_rect, main_rect} = panels(frame)
 
     ws = Enum.zip(state.widgets, [w1_rect, w2_rect, w3_rect, w4_rect])
-    |> Enum.map(fn {{widget_name, widget}, rect} ->
-      {focus_wrapper(state, widget.small, widget_name), rect}
+    |> Enum.map(fn {{widget_pos, widget_name}, rect} ->
+      widget = Exdashboard.Widgets.Store.get(widget_name)
+      {focus_wrapper(state, widget.small, widget_pos), rect}
     end)
 
-    main_widget = List.keyfind(state.widgets, state.main_widget_name, 0) |> elem(1)
+    main_widget = Exdashboard.Widgets.Store.get(state.main_widget_name)
     ws ++ [{main_widget.big, main_rect}]
   end
 
@@ -73,7 +74,8 @@ defmodule Exdashboard.Layouts.FourPlusBig do
     state =
       case key do
         %Event.Key{code: "f", kind: "press"} ->
-          %{state | main_widget_name: Focus.current(focus)}
+          {_, main_widget_name} = List.keyfind(state.widgets, Focus.current(focus), 0)
+          %{state | main_widget_name: main_widget_name}
         key -> state
       end
 
